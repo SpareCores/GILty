@@ -20,12 +20,13 @@ shows the babble scrolling by and the speed in words per second; elsewhere
 $ docker run --rm ghcr.io/sparecores/gilty --words 20000000 --seed 4
 GILty 0.1.0 on Intel(R) Core(TM) i9-14900K, Python 3.13.16
 learned Moby-Dick in 0.0 s: 212,796 words, 33,089 states
-   4,961,512 words/s | In fact, I suppose; well, poor Tash by some two F-shaped spoutholes, you feel
-   4,699,291 words/s | Insufferable sting, that I see four corners of all other
-babbled 20,000,000 words in 4.1 s: 4,834,089 words/s
+Core i9-14900K   5,026,802 words/s | … way he has to overlapping sleeves of dare-devil daring, so
+Core i9-14900K   4,561,558 words/s | … ran down in the honor him of the deathful whaleboat’s bow—
+babbled 20,000,000 words in 4.2 s: 4,786,581 words/s
 ```
 
-With `-it` (a terminal), GILty shows a live view instead of status lines.
+Every status line starts with the CPU, so the logs of several copies on
+different machines can be compared line by line. With `-it` (a terminal), GILty shows a live view instead of status lines.
 
 ## Results
 
@@ -100,6 +101,7 @@ gilty --order K       words of context (default 1; 2 and 3 read more like the bo
 gilty --seed S        reproducible babble
 gilty --bench         learn, babble 5,000,000 words, print JSON
 gilty --plain         status lines even on a terminal
+gilty --interval S    seconds between status lines (default 2)
 ```
 
 The container image is `ghcr.io/sparecores/gilty` (linux/amd64 and

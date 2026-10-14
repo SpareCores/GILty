@@ -34,3 +34,11 @@ def test_bench_prints_json(capsys):
     main(["--bench", "--words", "20000", "--seed", "1"])
     out = capsys.readouterr().out
     assert '"words_per_second"' in out and '"states"' in out
+
+
+def test_cpu_short():
+    from gilty.__main__ import cpu_short
+
+    assert cpu_short("AMD EPYC 7571") == "EPYC 7571"
+    assert cpu_short("Intel(R) Xeon(R) Platinum 8259CL CPU @ 2.50GHz") == "Xeon 8259CL"
+    assert cpu_short("Intel(R) Core(TM) i9-14900K") == "Core i9-14900K"

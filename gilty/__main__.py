@@ -36,6 +36,16 @@ def cpu_model():
     return platform.processor() or platform.machine()
 
 
+def cpu_short(model=None):
+    """A short CPU name for status lines: "EPYC 7571", "Xeon 8259CL",
+    "Core i9-14900K", "Neoverse-V3"."""
+    import re
+
+    m = model or cpu_model()
+    m = re.sub(r"\((R|TM)\)|\bCPU\b|@.*$|\b(AMD|Intel|Platinum|Gold|Silver|Processor)\b|\d+-Core", " ", m)
+    return " ".join(m.split()) or "unknown CPU"
+
+
 def where():
     """The machine, as far as the process can tell: the node name in
     Kubernetes (set from the downward API) and the CPU model."""
@@ -82,6 +92,7 @@ def run_log(args):
     tokens, model, train_s = prepare(args.order)
     print(f"learned Moby-Dick in {train_s:.1f} s: {len(tokens):,} words, {len(model):,} states", flush=True)
     b = Babbler(model, args.order, tokens, seed=args.seed)
+    cpu = cpu_short()
     start = last = time.perf_counter()
     last_words = 0
     while args.words is None or b.words < args.words:
@@ -89,7 +100,7 @@ def run_log(args):
         now = time.perf_counter()
         if now - last >= args.interval:
             rate = (b.words - last_words) / (now - last)
-            print(f"{rate:12,.0f} words/s | {sentence(tail)[:80]}", flush=True)
+            print(f"{cpu:<14.14} {rate:>11,.0f} words/s | {sentence(tail)[:60]}", flush=True)
             last, last_words = now, b.words
     total = time.perf_counter() - start
     print(f"babbled {b.words:,} words in {total:.1f} s: {b.words / total:,.0f} words/s", flush=True)
