@@ -18,15 +18,15 @@ shows the babble scrolling by and the speed in words per second; elsewhere
 
 ```console
 $ docker run --rm ghcr.io/sparecores/gilty --words 20000000 --seed 4
-GILty 0.1.0 on Intel(R) Core(TM) i9-14900K, Python 3.13.16
-learned Moby-Dick in 0.0 s: 212,796 words, 33,089 states
-Core i9-14900K   5,026,802 words/s | … way he has to overlapping sleeves of dare-devil daring, so
-Core i9-14900K   4,561,558 words/s | … ran down in the honor him of the deathful whaleboat’s bow—
-babbled 20,000,000 words in 4.2 s: 4,786,581 words/s
+GILty 0.2.0 on Intel(R) Core(TM) i9-14900K, Python 3.13.16
+learned Moby-Dick in 0.1 s: 212,796 words, 33,089 states
+Core i9-14900K         5,250,727 words/s | When the Parsee; who didst hurl him be sure enough, 
+babbled 20,000,000 words in 3.8 s: 5,300,398 words/s
 ```
 
-Every status line starts with the CPU, so the logs of several copies on
-different machines can be compared line by line. With `-it` (a terminal), GILty shows a live view instead of status lines.
+Every status line starts with the machine (the instance type when GILty can
+tell, and the CPU), so the logs of several copies on different machines can
+be compared line by line. With `-it` (a terminal), GILty shows a live view instead of status lines.
 
 ## Results
 
@@ -114,14 +114,45 @@ gilty --interval S    seconds between status lines (default 2)
 
 The container image is `ghcr.io/sparecores/gilty` (linux/amd64 and
 linux/arm64). From a checkout, `pip install .` installs the `gilty` command;
-it has no dependencies. In Kubernetes, set `NODE_NAME` from the downward API
-(`spec.nodeName`) and GILty names the node in its first line:
+it has no dependencies.
+
+Every status line starts with the instance type, when GILty can tell, and
+the CPU. It looks the instance type up in this order: `GILTY_INSTANCE_TYPE`;
+in Kubernetes, the `node.kubernetes.io/instance-type` label of its node
+(`NODE_NAME` from the downward API, read with the pod's service account);
+the AWS instance metadata service. In Kubernetes that takes:
 
 ```yaml
-env:
-  - name: NODE_NAME
-    valueFrom: {fieldRef: {fieldPath: spec.nodeName}}
+apiVersion: v1
+kind: ServiceAccount
+metadata: {name: gilty}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata: {name: gilty-node-reader}
+rules:
+  - {apiGroups: [""], resources: [nodes], verbs: [get]}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata: {name: gilty-node-reader}
+roleRef: {apiGroup: rbac.authorization.k8s.io, kind: ClusterRole, name: gilty-node-reader}
+subjects: [{kind: ServiceAccount, name: gilty, namespace: default}]
 ```
+
+and in the pod spec:
+
+```yaml
+serviceAccountName: gilty
+containers:
+  - name: gilty
+    image: ghcr.io/sparecores/gilty:0.2.0
+    env:
+      - name: NODE_NAME
+        valueFrom: {fieldRef: {fieldPath: spec.nodeName}}
+```
+
+Without them, GILty names the CPU only.
 
 ## The book
 

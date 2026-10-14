@@ -20,6 +20,7 @@ import textwrap
 import time
 
 from gilty import __version__
+from gilty.machine import instance_type
 from gilty.markov import Babbler, load_book, tokenize, train
 
 CHUNK = 100_000  # words generated between status checks
@@ -74,13 +75,22 @@ def cpu_short(model=None):
     return " ".join(m.split()) or "unknown CPU"
 
 
-def where():
+def where(itype=None):
     """The machine, as far as the process can tell: the node name in
-    Kubernetes (set from the downward API) and the CPU model."""
+    Kubernetes (set from the downward API), the instance type and the CPU
+    model."""
     parts = [cpu_model()]
+    if itype:
+        parts.insert(0, itype)
     if os.environ.get("NODE_NAME"):
         parts.insert(0, os.environ["NODE_NAME"])
     return ", ".join(parts)
+
+
+def label(itype=None):
+    """The start of every status line: the instance type when known, and the
+    CPU ("r5a.large EPYC 7571")."""
+    return f"{itype} {cpu_short()}" if itype else cpu_short()
 
 
 def sentence(words):
@@ -108,7 +118,7 @@ def run_bench(args):
         remaining -= CHUNK
     gen_s = time.perf_counter() - t
     print(json.dumps({
-        "version": __version__, "python": platform.python_version(), "cpu": cpu_model(),
+        "version": __version__, "python": platform.python_version(), "cpu": cpu_model(), "instance_type": instance_type(),
         "order": args.order, "states": len(model), "train_seconds": round(train_s, 3),
         "words": args.words, "babble_seconds": round(gen_s, 3), "words_per_second": round(args.words / gen_s),
     }))
@@ -116,11 +126,12 @@ def run_bench(args):
 
 def run_log(args):
     """One status line per interval: for logs and pipes."""
-    print(f"GILty {__version__} on {where()}, Python {platform.python_version()}", flush=True)
+    itype = instance_type()
+    print(f"GILty {__version__} on {where(itype)}, Python {platform.python_version()}", flush=True)
     tokens, model, train_s = prepare(args.order)
     print(f"learned Moby-Dick in {train_s:.1f} s: {len(tokens):,} words, {len(model):,} states", flush=True)
     b = Babbler(model, args.order, tokens, seed=args.seed)
-    cpu = cpu_short()
+    tag = label(itype)
     start = last = time.perf_counter()
     last_words = 0
     while args.words is None or b.words < args.words:
@@ -128,7 +139,7 @@ def run_log(args):
         now = time.perf_counter()
         if now - last >= args.interval:
             rate = (b.words - last_words) / (now - last)
-            print(f"{cpu:<14.14} {rate:>11,.0f} words/s | {sentence(tail)[:60]}", flush=True)
+            print(f"{tag:<20} {rate:>11,.0f} words/s | {sentence(tail)[:52]}", flush=True)
             last, last_words = now, b.words
     total = time.perf_counter() - start
     print(f"babbled {b.words:,} words in {total:.1f} s: {b.words / total:,.0f} words/s", flush=True)
@@ -138,7 +149,7 @@ def run_live(args):
     """A live view: the babble scrolls, the speed updates ten times a second."""
     cols = max(40, min(os.get_terminal_size().columns, 100))
     out = sys.stdout
-    out.write(f"\x1b[1mGILty {__version__}\x1b[0m  on {where()}, Python {platform.python_version()}\n")
+    out.write(f"\x1b[1mGILty {__version__}\x1b[0m  on {where(instance_type())}, Python {platform.python_version()}\n")
     out.write("learning Moby-Dick… ")
     out.flush()
     tokens, model, train_s = prepare(args.order)
