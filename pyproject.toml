@@ -1,0 +1,35 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "gilty"
+dynamic = ["version"]
+description = "Babbles in the style of Moby-Dick as fast as one CPU core allows: a GIL-bound benchmark of single-core speed and cache"
+readme = "README.md"
+license = "MPL-2.0"
+license-files = ["LICENSE"]
+requires-python = ">=3.10"
+authors = [{ name = "Spare Cores", email = "hello@sparecores.com" }]
+keywords = ["benchmark", "gil", "markov-chain", "single-core", "cache"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Environment :: Console",
+  "Topic :: System :: Benchmark",
+]
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/SpareCores/GILty"
+
+[project.scripts]
+gilty = "gilty.__main__:main"
+
+[tool.hatch.version]
+path = "gilty/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["gilty"]
+
+[tool.hatch.build.targets.sdist]
+include = ["gilty", "tests", "bench", "README.md", "LICENSE"]
