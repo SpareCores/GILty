@@ -42,3 +42,20 @@ def test_cpu_short():
     assert cpu_short("AMD EPYC 7571") == "EPYC 7571"
     assert cpu_short("Intel(R) Xeon(R) Platinum 8259CL CPU @ 2.50GHz") == "Xeon 8259CL"
     assert cpu_short("Intel(R) Core(TM) i9-14900K") == "Core i9-14900K"
+
+
+def test_cpu_model_on_arm(tmp_path):
+    from gilty.__main__ import cpu_model, cpu_short
+
+    # /proc/cpuinfo of an AWS Graviton 4 (r8g): no "model name" line
+    info = tmp_path / "cpuinfo"
+    info.write_text(
+        "processor\t: 0\nBogoMIPS\t: 2000.00\nFeatures\t: fp asimd evtstrm aes pmull sha1\n"
+        "CPU implementer\t: 0x41\nCPU architecture: 8\nCPU variant\t: 0x0\nCPU part\t: 0xd4f\nCPU revision\t: 1\n\n"
+    )
+    assert cpu_model(str(info)) == "Neoverse-V2"
+    assert cpu_short("Neoverse-V2") == "Neoverse-V2"
+    info.write_text("processor\t: 0\nCPU implementer\t: 0x99\nCPU part\t: 0x123\n")
+    assert cpu_model(str(info)) == "Arm core 0x99/0x123"
+    info.write_text("processor\t: 0\nmodel name\t: AMD EPYC 9R45\n")
+    assert cpu_model(str(info)) == "AMD EPYC 9R45"

@@ -43,7 +43,15 @@ On AWS, us-east-1, CPython 3.13, one core each, best of two runs:
 | GILty `--order 3` | 1.52 M words/s | 5.71 M words/s (3.8×) |
 | Learning the book | | 3.1–3.5× faster |
 
-A cheaper instance, almost five times the speed. Two m5a.large instances (the
+A cheaper instance, almost five times the speed.
+
+A fast core alone is not enough. An r8g.large (AWS Graviton 4, $0.118/h) is
+2.55× faster than the r5a.large in Geekbench 6 single-core, yet GILty babbles
+only 1.29× faster there (2.28 M words/s at order 1, 1.22–1.42× across orders;
+learning the book, more ordinary interpreter work, is 2× faster). Following
+pointers through megabytes depends on the cache more than on the core: the
+single-threaded cached-read benchmark (PassMark: 1.47× for this pair)
+predicts it better than Geekbench does. Two m5a.large instances (the
 same EPYC 7571) in other zones landed within 15% of the r5a.large: AWS builds
 the r5a and m5a families on that CPU only, which makes them a stable
 baseline. Not every instance type is: an m5.large can land on a Skylake

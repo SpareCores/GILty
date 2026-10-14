@@ -25,14 +25,42 @@ from gilty.markov import Babbler, load_book, tokenize, train
 CHUNK = 100_000  # words generated between status checks
 
 
-def cpu_model():
+# Arm cores by (CPU implementer, CPU part), as lscpu names them: Linux on Arm
+# has no "model name" in /proc/cpuinfo. Arm Ltd. cores cover AWS Graviton
+# (2: Neoverse-N1, 3: V1, 4: V2, 5: V3) and most other Arm servers.
+ARM_PARTS = {
+    ("0x41", "0xd0c"): "Neoverse-N1",
+    ("0x41", "0xd40"): "Neoverse-V1",
+    ("0x41", "0xd49"): "Neoverse-N2",
+    ("0x41", "0xd4f"): "Neoverse-V2",
+    ("0x41", "0xd84"): "Neoverse-V3",
+    ("0x41", "0xd8e"): "Neoverse-N3",
+    ("0x41", "0xd08"): "Cortex-A72",
+    ("0x41", "0xd0b"): "Cortex-A76",
+    ("0xc0", "0xac3"): "Ampere-1",
+    ("0xc0", "0xac4"): "Ampere-1a",
+}
+
+
+def cpu_model(cpuinfo="/proc/cpuinfo"):
+    """The CPU model: "model name" on x86, the core named from its
+    implementer and part number on Arm."""
+    fields = {}
     try:
-        with open("/proc/cpuinfo") as f:
+        with open(cpuinfo) as f:
             for line in f:
-                if line.startswith("model name") or line.startswith("Model"):
-                    return line.split(":", 1)[1].strip()
+                key, sep, value = line.partition(":")
+                key = key.strip()
+                if not sep:
+                    continue
+                if key in ("model name", "Model"):
+                    return value.strip()
+                fields.setdefault(key, value.strip())
     except OSError:
         pass
+    if "CPU part" in fields:
+        impl, part = fields.get("CPU implementer", "").lower(), fields["CPU part"].lower()
+        return ARM_PARTS.get((impl, part), f"Arm core {impl}/{part}")
     return platform.processor() or platform.machine()
 
 
