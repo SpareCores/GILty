@@ -113,7 +113,12 @@ gilty --interval S    seconds between status lines (default 2)
 ```
 
 The container image is `ghcr.io/sparecores/gilty` (linux/amd64 and
-linux/arm64). From a checkout, `pip install .` installs the `gilty` command;
+linux/arm64). Its CPython comes from python-build-standalone (as installed by
+uv): on the same EKS node, GILty ran 3.53 M words/s with it, 3.00 M with
+Debian's `python:3.13-slim` and 2.80 M with `python:3.13-alpine`, so the
+numbers it shows stay close to what the hardware can do. Container settings
+made no difference: seccomp unconfined or a privileged container measured the
+same as the defaults. From a checkout, `pip install .` installs the `gilty` command;
 it has no dependencies.
 
 Every status line starts with the instance type, when GILty can tell, and
